@@ -21,12 +21,12 @@ class RequestFailed(BaseException):
     def __init__(self, *args):
         super().__init__(self, *args)
 
-def time2filename(time: str) -> str:
+def time2filename(time):
     parsed_time = datetime.strptime(time, "%Y-%m-%dT%H:%M")
     return parsed_time.strftime("%Y-%m-%dT%H%M.json")
 
 
-def get_argparser() -> argparse.ArgumentParser:
+def get_argparser():
     parser = argparse.ArgumentParser(description="Crawl the quic interop data")
     parser.add_argument(
         "-c", "--config", type=str, required=True, help="Path to config file"
@@ -35,7 +35,7 @@ def get_argparser() -> argparse.ArgumentParser:
     return parser
 
 
-def get_available_times(base_url: str) -> list[str]:
+def get_available_times(base_url):
     response = requests.get(f"{base_url}/logs.json", proxies=PROXY_CONFIG)
     if response.status_code == 200:
         return json.loads(response.text)
@@ -43,7 +43,7 @@ def get_available_times(base_url: str) -> list[str]:
     raise (RequestFailed)
 
 
-def match_for_result(text: str) -> int:
+def match_for_result(text):
     lines = text.splitlines()
     last_line = lines[-1]
     logging.debug(f"Last line: {last_line}")
@@ -59,7 +59,7 @@ def match_for_result(text: str) -> int:
         raise GoodputNotFound
 
 
-def request_for_output(url: str) -> str:
+def request_for_output(url):
     logging.debug(f"Request output.txt at {url}")
     response = requests.get(url, proxies=PROXY_CONFIG)
     if response.status_code == 200:
@@ -68,7 +68,7 @@ def request_for_output(url: str) -> str:
     raise RequestFailed
 
 
-def get_goodput(base_url_with_time: str, client: str, server: str) -> list[int]:
+def get_goodput(base_url_with_time, client, server):
     # in the url, the format is server_client/goodput/num/output.txt
     goodput = list()
     for idx in range(1, 6):
@@ -87,7 +87,7 @@ def get_goodput(base_url_with_time: str, client: str, server: str) -> list[int]:
     return goodput
 
 
-def get_crosstraffic(base_url_with_time: str, client: str, server: str) -> list[int]:
+def get_crosstraffic(base_url_with_time, client, server):
     crosstraffic = list()
     for idx in range(1, 6):
         try:
@@ -104,7 +104,7 @@ def get_crosstraffic(base_url_with_time: str, client: str, server: str) -> list[
 
     return crosstraffic
 
-def get_new_data_single_server(base_url: str, time: str, server: str, quic_impls: list[str]) -> tuple[dict, dict]:
+def get_new_data_single_server(base_url, time, server, quic_impls):
     goodput = dict()
     crosstraffic = dict()
     for client in quic_impls:
@@ -115,7 +115,7 @@ def get_new_data_single_server(base_url: str, time: str, server: str, quic_impls
         )
     return (goodput, crosstraffic)
 
-def get_new_data(base_url: str, time: str, quic_impls: list[str]) -> dict:
+def get_new_data(base_url, time, quic_impls):
     goodput = dict()
     crosstraffic = dict()
     with concurrent.futures.ThreadPoolExecutor() as executor:

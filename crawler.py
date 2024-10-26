@@ -2,14 +2,14 @@ import json
 import argparse
 import requests
 import os.path
-import itertools
 import re
-from collections import defaultdict
 import logging
 from datetime import datetime
+import concurrent.futures
 
 REGEX_PATTERN = re.compile(r"Goodput: (.+) kbps")
-PROXY_CONFIG = {"http": "127.0.0.1:7890", "https": "127.0.0.1:7890"}
+# PROXY_CONFIG = {"http": "127.0.0.1:7890", "https": "127.0.0.1:7890"}
+PROXY_CONFIG = {}
 
 
 class GoodputNotFound(BaseException):
@@ -78,10 +78,10 @@ def get_goodput(base_url_with_time: str, client: str, server: str) -> list[int]:
             )
         except (RequestFailed, GoodputNotFound):
             # if this test failed, there should be no more tests
-            logging.info(f"Googput test faild at idx {idx}")
+            logging.info(f"Client {client}, Server {server}, Goodput test faild at idx {idx}")
             break
 
-        logging.info(f"idx {idx}, goodput {single_goodput} kbps")
+        logging.info(f"Client {client}, Server {server}, idx {idx}, goodput {single_goodput} kbps")
         goodput.append(single_goodput)
 
     return goodput
@@ -96,23 +96,34 @@ def get_crosstraffic(base_url_with_time: str, client: str, server: str) -> list[
             )
         except (RequestFailed, GoodputNotFound):
             # if this test failed, there should be no more tests
-            logging.info(f"Crosstraffic test faild at idx {idx}")
+            logging.info(f"Client {client}, Server {server}, Crosstraffic test faild at idx {idx}")
             break
 
-        logging.info(f"idx {idx}, crosstraffic {single_crosstraffic} kbps")
+        logging.info(f"Client {client}, Server {server}, idx {idx}, crosstraffic {single_crosstraffic} kbps")
         crosstraffic.append(single_crosstraffic)
 
     return crosstraffic
 
-def get_new_data(base_url: str, time: str, quic_impls: list[str]) -> dict:
-    goodput = defaultdict(lambda: defaultdict(dict))
-    crosstraffic = defaultdict(lambda: defaultdict(dict))
-    for client, server in itertools.product(quic_impls, quic_impls):
+def get_new_data_single_server(base_url: str, time: str, server: str, quic_impls: list[str]) -> tuple[dict, dict]:
+    goodput = dict()
+    crosstraffic = dict()
+    for client in quic_impls:
         logging.info(f"Client: {client}, Server: {server}")
-        goodput[server][client] = get_goodput(f"{base_url}/{time}", client, server)
-        crosstraffic[server][client] = get_crosstraffic(
+        goodput[client] = get_goodput(f"{base_url}/{time}", client, server)
+        crosstraffic[client] = get_crosstraffic(
             f"{base_url}/{time}", client, server
         )
+    return (goodput, crosstraffic)
+
+def get_new_data(base_url: str, time: str, quic_impls: list[str]) -> dict:
+    goodput = dict()
+    crosstraffic = dict()
+    with concurrent.futures.ThreadPoolExecutor() as executor:
+        futures = {executor.submit(get_new_data_single_server, base_url, time, server, quic_impls): server for server in quic_impls}
+
+        for future in concurrent.futures.as_completed(futures):
+            server_name = futures[future]
+            goodput[server_name], crosstraffic[server_name] = future.result()
 
     return {"goodput": goodput, "crosstraffic": crosstraffic}
 

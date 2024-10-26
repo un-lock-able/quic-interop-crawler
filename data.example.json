@@ -1,0 +1,15 @@
+{
+    "//": "First layer is server (names written on row), second layer is client (names written on column)",
+    "goodput": {
+        "quic-go": {
+            "quic-go": [
+                9533,
+                9566,
+                9542,
+                9525,
+                9532
+            ]
+        }
+    },
+    "crosstraffic": {}
+}

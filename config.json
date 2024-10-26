@@ -1,0 +1,39 @@
+{
+    "data_dir": "./data",
+    "base_url": "https://interop.seemann.io/logs",
+    "clients": [
+        "quic-go",
+        "ngtcp2",
+        "mvfst",
+        "quiche",
+        "kwik",
+        "picoquic",
+        "aioquic",
+        "neqo",
+        "msquic",
+        "chrome",
+        "xquic",
+        "lsquic",
+        "quinn",
+        "s2n-quic",
+        "go-x-net"
+    ],
+    "servers": [
+        "quic-go",
+        "ngtcp2",
+        "mvfst",
+        "quiche",
+        "kwik",
+        "picoquic",
+        "aioquic",
+        "neqo",
+        "nginx",
+        "msquic",
+        "xquic",
+        "lsquic",
+        "haproxy",
+        "quinn",
+        "s2n-quic",
+        "go-x-net"
+    ]
+}

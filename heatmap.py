@@ -124,6 +124,9 @@ def draw_figure(data_dir, figure_dir, time):
     crosstraffic_fig.savefig(
         os.path.join(figure_dir, "crosstraffic", f"{time2filename(time)}.png")
     )
+
+    plt.close(goodput_fig)
+    plt.close(crosstraffic_fig)
     return True
 
 

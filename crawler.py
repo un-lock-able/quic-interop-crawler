@@ -4,8 +4,8 @@ import requests
 import os.path
 import re
 import logging
-from datetime import datetime
 import concurrent.futures
+from time2filename import time2filename
 
 REGEX_PATTERN = re.compile(r"Goodput: (.+) kbps")
 # PROXY_CONFIG = {"http": "127.0.0.1:7890", "https": "127.0.0.1:7890"}
@@ -20,10 +20,6 @@ class GoodputNotFound(BaseException):
 class RequestFailed(BaseException):
     def __init__(self, *args):
         super().__init__(self, *args)
-
-def time2filename(time):
-    parsed_time = datetime.strptime(time, "%Y-%m-%dT%H:%M")
-    return parsed_time.strftime("%Y-%m-%dT%H%M.json")
 
 
 def get_argparser():
@@ -78,10 +74,14 @@ def get_goodput(base_url_with_time, client, server):
             )
         except (RequestFailed, GoodputNotFound):
             # if this test failed, there should be no more tests
-            logging.info(f"Client {client}, Server {server}, Goodput test faild at idx {idx}")
+            logging.info(
+                f"Client {client}, Server {server}, Goodput test faild at idx {idx}"
+            )
             break
 
-        logging.info(f"Client {client}, Server {server}, idx {idx}, goodput {single_goodput} kbps")
+        logging.info(
+            f"Client {client}, Server {server}, idx {idx}, goodput {single_goodput} kbps"
+        )
         goodput.append(single_goodput)
 
     return goodput
@@ -96,13 +96,18 @@ def get_crosstraffic(base_url_with_time, client, server):
             )
         except (RequestFailed, GoodputNotFound):
             # if this test failed, there should be no more tests
-            logging.info(f"Client {client}, Server {server}, Crosstraffic test faild at idx {idx}")
+            logging.info(
+                f"Client {client}, Server {server}, Crosstraffic test faild at idx {idx}"
+            )
             break
 
-        logging.info(f"Client {client}, Server {server}, idx {idx}, crosstraffic {single_crosstraffic} kbps")
+        logging.info(
+            f"Client {client}, Server {server}, idx {idx}, crosstraffic {single_crosstraffic} kbps"
+        )
         crosstraffic.append(single_crosstraffic)
 
     return crosstraffic
+
 
 def get_new_data_single_server(base_url, time, server, quic_impls):
     goodput = dict()
@@ -110,16 +115,20 @@ def get_new_data_single_server(base_url, time, server, quic_impls):
     for client in quic_impls:
         logging.info(f"Client: {client}, Server: {server}")
         goodput[client] = get_goodput(f"{base_url}/{time}", client, server)
-        crosstraffic[client] = get_crosstraffic(
-            f"{base_url}/{time}", client, server
-        )
+        crosstraffic[client] = get_crosstraffic(f"{base_url}/{time}", client, server)
     return (goodput, crosstraffic)
+
 
 def get_new_data(base_url, time, quic_impls):
     goodput = dict()
     crosstraffic = dict()
     with concurrent.futures.ThreadPoolExecutor() as executor:
-        futures = {executor.submit(get_new_data_single_server, base_url, time, server, quic_impls): server for server in quic_impls}
+        futures = {
+            executor.submit(
+                get_new_data_single_server, base_url, time, server, quic_impls
+            ): server
+            for server in quic_impls
+        }
 
         for future in concurrent.futures.as_completed(futures):
             server_name = futures[future]
@@ -146,7 +155,7 @@ def main():
     logging.debug(f"QUIC impls with both client and server: {quic_impls}")
 
     ### THIS ONLY FOR TESTING
-    # quic_impls = ['quiche', 'lsquic']
+    quic_impls = ["quiche", "lsquic"]
 
     data_file_dir = config["data_dir"]
 
@@ -163,16 +172,16 @@ def main():
         exit(0)
 
     ### THIS IS ONLY FOR TESING
-    # available_times = ['2024-10-22T16:35']
+    available_times = ["2024-10-27T08:32"]
 
     for time in available_times:
         if time not in stored_time:
             logging.info(f"Crawl for time {time}")
             new_data = get_new_data(config["base_url"], time, quic_impls)
-            with open(os.path.join(data_file_dir, time2filename(time)), 'w') as fl:
+            with open(os.path.join(data_file_dir, time2filename(time)), "w") as fl:
                 json.dump(new_data, fl)
             stored_time.append(time)
-            with open(manifest_file_name, 'w') as fl:
+            with open(manifest_file_name, "w") as fl:
                 json.dump(stored_time, fl)
 
 

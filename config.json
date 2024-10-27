@@ -1,5 +1,6 @@
 {
     "data_dir": "./data",
+    "figure_dir": "./figure",
     "base_url": "https://interop.seemann.io/logs",
     "clients": [
         "quic-go",

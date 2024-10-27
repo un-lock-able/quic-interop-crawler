@@ -155,7 +155,7 @@ def main():
     logging.debug(f"QUIC impls with both client and server: {quic_impls}")
 
     ### THIS ONLY FOR TESTING
-    quic_impls = ["quiche", "lsquic"]
+    # quic_impls = ["quiche", "lsquic"]
 
     data_file_dir = config["data_dir"]
 
@@ -172,7 +172,7 @@ def main():
         exit(0)
 
     ### THIS IS ONLY FOR TESING
-    available_times = ["2024-10-27T08:32"]
+    # available_times = ["2024-10-27T08:32"]
 
     for time in available_times:
         if time not in stored_time:

@@ -1,0 +1,27 @@
+{
+    "local": true,
+    "data_dir": "./data",
+    "figure_dir": "./figure",
+    "base_url": "/path/to/log",
+    "impls": [
+        {
+            "cca": "cubic",
+            "quic_impls": [
+                "ngtcp2",
+                "xquic",
+                "lsquic",
+                "neqo",
+                "quiche"
+            ]
+        },
+        {
+            "cca": "bbr",
+            "quic_impls": [
+                "ngtcp2",
+                "xquic",
+                "lsquic",
+                "quiche"
+            ]
+        }
+    ]
+}

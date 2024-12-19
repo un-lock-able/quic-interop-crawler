@@ -6,6 +6,7 @@ import re
 import logging
 import concurrent.futures
 from time2filename import time2filename
+from itertools import product
 
 REGEX_PATTERN = re.compile(r"Goodput: (.+) kbps")
 # PROXY_CONFIG = {"http": "127.0.0.1:7890", "https": "127.0.0.1:7890"}
@@ -57,6 +58,11 @@ def match_for_result(text):
 
 def request_for_output(url):
     logging.debug(f"Request output.txt at {url}")
+    if os.path.exists(url):
+        # is a file path.
+        with open(url) as fl:
+            return match_for_result(fl.read())
+    
     response = requests.get(url, proxies=PROXY_CONFIG)
     if response.status_code == 200:
         return match_for_result(response.text)
@@ -137,19 +143,7 @@ def get_new_data(base_url, time, quic_impls):
     return {"goodput": goodput, "crosstraffic": crosstraffic}
 
 
-def main():
-    parser = get_argparser()
-    args = parser.parse_args()
-
-    if args.debug:
-        logging.basicConfig(level=logging.DEBUG)
-    else:
-        logging.basicConfig(level=logging.INFO)
-
-    config_file_name = args.config
-    with open(config_file_name) as fl:
-        config = json.load(fl)
-
+def web_main(config):
     # quic_impls are the names that appears in both client and server
     quic_impls = list(set(config["clients"]) & set(config["servers"]))
     logging.debug(f"QUIC impls with both client and server: {quic_impls}")
@@ -183,6 +177,40 @@ def main():
             stored_time.append(time)
             with open(manifest_file_name, "w") as fl:
                 json.dump(stored_time, fl)
+
+
+def local_main(config):
+    for impl in config["impls"]:
+        goodput = dict()
+        cca_name = impl["cca"]
+        quic_impl = impl["quic_impls"]
+        for server in quic_impl:
+            goodput[server] = dict()
+            for client in quic_impl:
+                goodput[server][client] = get_goodput(
+                    f"{config["base_url"]}/{cca_name}", client, server
+                )
+        with open(os.path.join(config["data_dir"], f"{cca_name}.json"), "w") as fl:
+            json.dump({"goodput": goodput}, fl)
+
+
+def main():
+    parser = get_argparser()
+    args = parser.parse_args()
+
+    if args.debug:
+        logging.basicConfig(level=logging.DEBUG)
+    else:
+        logging.basicConfig(level=logging.INFO)
+
+    config_file_name = args.config
+    with open(config_file_name) as fl:
+        config = json.load(fl)
+
+    if config["local"]:
+        local_main(config)
+    else:
+        web_main(config)
 
 
 if __name__ == "__main__":

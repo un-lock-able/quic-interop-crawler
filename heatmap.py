@@ -54,7 +54,7 @@ def draw_heatmap(data):
 
     fig, axes = plt.subplots(1, 2, figsize=(13, 6))
     axes[0].set_title("Average")
-    heatmap1 = axes[0].imshow(avg, cmap="viridis", aspect="auto", vmin=1)
+    heatmap1 = axes[0].imshow(avg, cmap="viridis", aspect="auto", vmin=np.min(avg[avg > 1]))
 
     axes[0].set_xticks(np.arange(len(quic_impls)), labels=quic_impls)
     axes[0].set_yticks(np.arange(len(quic_impls)), labels=quic_impls)
@@ -130,6 +130,36 @@ def draw_figure(data_dir, figure_dir, time):
     return True
 
 
+def web_main(config):
+    stored_time = read_from_manifest(config["data_dir"])
+    figured_time = read_from_manifest(config["figure_dir"])
+
+    for time in stored_time:
+        if time not in figured_time:
+            logging.info(f"Draw for {time}")
+            if draw_figure(config["data_dir"], config["figure_dir"], time):
+                figured_time.append(time)
+            with open(os.path.join(config["figure_dir"], "manifest.json"), "w") as fl:
+                json.dump(figured_time, fl)
+
+
+def local_main(config):
+    data_file_dir = config["data_dir"]
+    figure_dir = config["figure_dir"]
+    for impl in config["impls"]:
+        cca_name = impl["cca"]
+        # quic_impl = impl["quic_impls"]
+        with open(os.path.join(data_file_dir, f"{cca_name}.json")) as fl:
+            data = json.load(fl)
+
+        goodput_fig = draw_heatmap(data["goodput"])
+        goodput_fig.suptitle(f"{cca_name} Goodput")
+
+        goodput_fig.savefig(os.path.join(figure_dir, "goodput", f"{cca_name}.png"))
+
+        plt.close(goodput_fig)
+
+
 def main():
     parser = get_argparser()
     args = parser.parse_args()
@@ -148,16 +178,10 @@ def main():
     os.makedirs(os.path.join(config["figure_dir"], "goodput"), exist_ok=True)
     os.makedirs(os.path.join(config["figure_dir"], "crosstraffic"), exist_ok=True)
 
-    stored_time = read_from_manifest(config["data_dir"])
-    figured_time = read_from_manifest(config["figure_dir"])
-
-    for time in stored_time:
-        if time not in figured_time:
-            logging.info(f"Draw for {time}")
-            if draw_figure(config["data_dir"], config["figure_dir"], time):
-                figured_time.append(time)
-            with open(os.path.join(config["figure_dir"], "manifest.json"), "w") as fl:
-                json.dump(figured_time, fl)
+    if config["local"]:
+        local_main(config)
+    else:
+        web_main(config)
 
 
 if __name__ == "__main__":
